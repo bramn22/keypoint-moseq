@@ -384,7 +384,7 @@ def format_data(coordinates, confidences=None, keys=None,
         chosen so that no time-series are broken into multiple segments.
         If all time-series are shorter than `seg_length`, then
         `seg_length` is set to the length of the shortest time-series.
-        
+
     Returns
     -------
     data: dict with the following items
@@ -862,7 +862,7 @@ def check_nan_proportions(coordinates, bodyparts,
 
 
 def load_keypoints(filepath_pattern, format, recursive=True, path_sep='-',
-                   path_in_name=False, remove_extension=True):
+                   path_in_name=False, remove_extension=True, downsampling_factor=None):
     """
     Load keypoint tracking results from one or more files. Several file
     formats are supported:
@@ -927,6 +927,10 @@ def load_keypoints(filepath_pattern, format, recursive=True, path_sep='-',
     remove_extension: bool, default=True
         Whether to remove the file extension when naming the tracking
         results from each file.
+    
+    downsampling_factor: int, default=None
+        Factor M by which to downsample the data. Downsampling is performed by keeping only every M'th frame.
+        If `downsampling_factor=None`, no downsampling is performed.
 
     Returns
     -------
@@ -970,6 +974,14 @@ def load_keypoints(filepath_pattern, format, recursive=True, path_sep='-',
         try:
             name = _name_from_path(filepath, path_in_name, path_sep, remove_extension)
             new_coordinates,new_confidences,bodyparts = loader(filepath, name)
+            # Downsample data
+            if downsampling_factor is not None:
+                assert isinstance(downsampling_factor, int) and downsampling_factor > 0, fill(
+                    f'`downsampling_factor` must be an integer greater than 0, but found {downsampling_factor}.')
+                print("Before downsampling", new_coordinates.shape)
+                new_coordinates = new_coordinates[::downsampling_factor]
+                new_confidences = new_confidences[::downsampling_factor]
+                print("After downsampling", new_coordinates.shape)
             coordinates.update(new_coordinates)
             confidences.update(new_confidences)
         except Exception as e:
